@@ -209,7 +209,7 @@
     <h2>Request a game</h2>
     <p>Requests are public issues on GitHub, where the catalog lives. Fill this in, then GitHub opens the full request with your answers.</p>
     <label class="field"><span>Game</span><input name="game" required placeholder="Title as the developer writes it"></label>
-    <label class="field"><span>Version</span><input name="version" placeholder="0.9.23, Chapter 4…"></label>
+    <label class="field"><span>Version</span><input name="version" placeholder="0.9.23 or Chapter 4"></label>
     <label class="field"><span>Official page</span><input name="page" type="url" required placeholder="https://developer.itch.io/game"></label>
     <div class="note">GitHub asks you to sign in to send it. No account yet? <a href="https://github.com/signup" target="_blank" rel="noopener">Making one</a> is free and takes a minute.</div>
     <div class="row">
@@ -231,7 +231,7 @@
       <a href="/catalog#request" data-request>Request a game</a>
       <a href="/support">Support</a>
     </div>
-    <small>Renplay and its catalog are made by the Renplay Team. Covers are loaded from the developers’ own pages and belong to them. The catalog never hosts game files: get games from their developers.</small>
+    <small>Renplay and its catalog are made by the Renplay Team. Covers are linked from where the catalog found them, such as the developers’ pages, Steam and SteamGridDB, and belong to their makers. The catalog never hosts game files: get games from their developers.</small>
   </div>
 </footer>
 
@@ -295,7 +295,8 @@
     }
     const p = poster(g)
     const whole = p?.width && p?.height && Math.abs(p.width / p.height - 2 / 3) > 0.04
-    return `<div class="art"${whole && p.tint ? ` style="background:radial-gradient(120% 90% at 50% 40%, ${esc(p.tint)}, #0a0a0f)"` : ''}><img src="${esc(cover)}" alt="" loading="lazy" referrerpolicy="no-referrer"${whole ? ' class="whole"' : ''}>${g.nsfw ? '<span class="tag18">18+</span>' : ''}</div>`
+    const tint = /^#[0-9a-f]{3,8}$/i.test(p?.tint ?? '') ? p.tint : ''
+    return `<div class="art"${whole && tint ? ` style="background:radial-gradient(120% 90% at 50% 40%, ${tint}, #0a0a0f)"` : ''}><img src="${esc(cover)}" alt="" loading="lazy" referrerpolicy="no-referrer"${whole ? ' class="whole"' : ''}>${g.nsfw ? '<span class="tag18">18+</span>' : ''}</div>`
   }
 
   function card(g, i) {
@@ -308,8 +309,9 @@
 
   function detail(g) {
     const rel = working(g)
-    const links = Object.keys(LINKS).filter((k) => g.links?.[k])
-    const store = STORES.find((k) => g.links?.[k])
+    // Only web addresses become links: a recipe's link is never a script.
+    const links = Object.keys(LINKS).filter((k) => /^https?:\/\//i.test(g.links?.[k] ?? ''))
+    const store = STORES.find((k) => links.includes(k))
     const file = rel?.archives?.[0]
     const releases = (g.releases ?? []).map((r) => `<div class="rel">
         <div class="top"><b>${esc(r.version)}</b>${r.status === 'broken' ? '<span class="st broken">Does not work</span>' : ''}${r.date ? `<span class="when">${day(r.date)}</span>` : ''}</div>
